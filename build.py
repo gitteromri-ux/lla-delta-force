@@ -695,6 +695,8 @@ body{font-size:17px}
 .cbx-b{padding:16px 18px}
 .chips{grid-template-columns:1fr 1fr;gap:12px}
 .chip{padding:18px 16px}
+.alert-grid,.blockers,.legend,.chips{grid-template-columns:1fr}
+.chips{grid-template-columns:1fr 1fr}
 .cr-grid{grid-template-columns:1fr 1fr}
 .bank{grid-template-columns:1fr 1fr}
 }
