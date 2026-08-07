@@ -4,6 +4,7 @@ import html, json, re
 import data as D
 import data2 as D2
 import data3 as D3
+import v2render as R
 
 E = html.escape
 def A(t): return E(t).replace("\n\n", "</p><p>").replace("\n", "<br>")
@@ -75,7 +76,7 @@ def tab1():
              'Nothing on this tab requires a further decision except the four items in the alert below.</p>')
     o.append(chips([
         ("7", "campaigns specified and ready", "Phase 0 through Phase 2"),
-        ("36", "creatives embedded from the live repositories", "Every image served from raw.githubusercontent.com"),
+        (str(V2_COUNTS["creatives"]), "creatives embedded from the live repositories", "Every image served from raw.githubusercontent.com and checked live"),
         ("$1,249", "upfront price, reduced from $1,800", "Or five payments of $289, totalling $1,445"),
         ("4", "blockers that must clear before spend", "Listed in the red alert directly below"),
     ]))
@@ -139,6 +140,7 @@ def tab1():
                  f'<img src="{E(b["u"])}" alt="{E(b["t"])}" loading="lazy"></div>'
                  f'<figcaption>{E(b["t"])}</figcaption></figure>')
     o.append("</div></section>")
+    o.append(V2_GALLERY)
     o.append("</div>")
     return "".join(o)
 
@@ -181,22 +183,16 @@ def tab2():
              f'<p class="close">{E(D3.ATELIER["close"])}</p></section>')
 
     # Line A sensitivity
-    rows = []
-    for cr, cells in D3.SENS_ROWS:
-        r = [cr]
-        for cpa, roas, ok in cells:
-            r.append(f"{cpa} cost per acquisition, {roas}")
-        rows.append(r)
     o.append('<section class="blk">' + head("What the contact rate has to be for Line A to survive.") +
              chips([("11.3x", "best cell in the grid", "A $20 lead closing at 18 percent"),
-                    ("1.00x", "break even line", "Every cell below it loses money on media alone"),
+                    ("2.00x", "the line worth clearing", "Above it the line carries overheads, not just media"),
                     ("0.42x", "worst cell in the grid", "A $60 lead closing at 2 percent")]))
     o.append('<div class="twrap"><table class="tbl sens"><thead><tr><th>Close rate</th>'
              + "".join(f"<th>Cost per lead {E(c)}</th>" for c in D3.SENS_CPLS) + "</tr></thead><tbody>")
     for cr, cells in D3.SENS_ROWS:
         o.append(f'<tr><th scope="row">{E(cr)}</th>')
-        for cpa, roas, ok in cells:
-            cls = "cell ok" if ok else "cell bad"
+        for cpa, roas, tier in cells:
+            cls = "cell " + tier
             o.append(f'<td class="{cls}"><div class="cell-v">{E(roas)}</div>'
                      f'<div class="cell-n">{E(cpa)} cost per acquisition</div></td>')
         o.append("</tr>")
@@ -254,98 +250,15 @@ def tab2():
     o.append("</div>")
     return "".join(o)
 
-# ============================================================ TAB 3
+# ============================================================ TAB 3 and TAB 4 (v2)
+_V2 = R.build_tabs(E, chips, head, table, copybox, srclinks)
+V2_LEADS, V2_INFL, V2_GALLERY, V2_COUNTS = _V2
+
 def tab3():
-    o = ['<div class="tabpane" id="p-leads" hidden>']
-    o.append('<section class="hero"><h1 class="h1">Buy high intent leads.</h1>'
-             '<p class="lede">Five vendors with verified pricing and three backups, each with a named contact and an outreach email written and ready to send.</p>')
-    o.append(chips([
-        ("5", "primary vendors with published or derived pricing", "Ranked by speed to live traffic"),
-        ("3", "backups held for when a primary stalls", "Nothing commercial published on any of the three"),
-        ("30 min", "fastest published launch in the set", "Astoria Company, pay per call division"),
-        ("$40 to $80", "planning band per inbound call", "Derived from published adjacent verticals"),
-    ]))
-    o.append("</section>")
+    return V2_LEADS
 
-    def vcard(v, backup=False):
-        s = ['<article class="vend%s">' % (" vend-bk" if backup else "")]
-        s.append(f'<div class="vend-top"><div class="vend-rank">{E(v["rank"])}</div>'
-                 f'<div><h3>{E(v["name"])}</h3><div class="vend-kind">{E(v["kind"])}</div></div></div>')
-        s.append('<div class="spec">')
-        s.append(f'<div class="sp"><div class="sp-k">Verified pricing</div><div class="sp-v">{E(v["price"])} {srclinks([v["price_src"]])}</div></div>')
-        s.append(f'<div class="sp"><div class="sp-k">Speed to live</div><div class="sp-v">{E(v["launch"])} {srclinks([v["launch_src"]])}</div></div>')
-        s.append(f'<div class="sp"><div class="sp-k">Named contact</div><div class="sp-v">'
-                 f'<a href="{E(v["contact_url"])}" target="_blank" rel="noopener">{E(v["contact_name"])}</a>'
-                 + (" " + " ".join(f'<a class="xtra" href="{E(u)}" target="_blank" rel="noopener">{E(t)}</a>' for t, u in v.get("contact_extra", [])))
-                 + "</div></div>")
-        s.append(f'<div class="sp"><div class="sp-k">Risk</div><div class="sp-v">{E(v["risk"])} {srclinks([v["risk_src"]])}</div></div>')
-        s.append(f'<div class="sp"><div class="sp-k">Consent posture</div><div class="sp-v">{E(v["tcpa"])}</div></div>')
-        s.append("</div>")
-        s.append('<div class="copyset">')
-        s.append(copybox(v["subject"], "Subject line"))
-        s.append(copybox(v["email"], "Outreach email"))
-        s.append("</div></article>")
-        return "".join(s)
-
-    o.append('<div class="phase-rule"><span>PRIMARY VENDORS</span></div>')
-    for v in D.VENDORS: o.append(vcard(v))
-    o.append('<div class="phase-rule"><span>BACKUPS</span></div>')
-    for v in D.BACKUPS: o.append(vcard(v, True))
-
-    o.append('<section class="blk">' + head("Ranked by how fast money turns into traffic.") +
-             '<div class="twrap"><table class="tbl kv4"><thead><tr><th>Order</th><th>Vendor</th><th>Published claim</th><th>Source</th></tr></thead><tbody>')
-    for n, name, claim, u in D.ONBOARDING:
-        o.append(f'<tr><td>{E(n)}</td><td><b>{E(name)}</b></td><td>{E(claim)}</td>'
-                 f'<td><a href="{E(u)}" target="_blank" rel="noopener">Source</a></td></tr>')
-    o.append("</tbody></table></div></section>")
-    o.append("</div>")
-    return "".join(o)
-
-# ============================================================ TAB 4
 def tab4():
-    o = ['<div class="tabpane" id="p-infl" hidden>']
-    o.append('<section class="hero"><h1 class="h1">Fifteen names, ranked by whether they can actually say yes.</h1>'
-             f'<p class="lede">{E(D2.INFL_ORDER)} Each card carries a published contact route and an email written for that specific person.</p>')
-    o.append(chips([(a, b, c) for a, b, c, _ in D2.INFL_BENCHMARKS]))
-    o.append("</section>")
-    o.append('<div class="legend"><div><b>GREEN</b> No competing paid course, published contact route, realistic yes.</div>'
-             '<div><b>AMBER</b> Adjacent commercial interest that needs clearing first.</div>'
-             '<div><b>RED</b> Sells a directly competing paid programme.</div></div>')
-
-    for p in D2.INFLUENCERS:
-        o.append(f'<article class="infl chip-{p["chip"].lower()}">')
-        o.append(f'<div class="infl-top"><div class="infl-n">{p["n"]:02d}</div>'
-                 f'<div><h3>{E(p["name"])}</h3><div class="infl-role">{E(p["role"])}</div></div>'
-                 f'<div class="badge b-{p["chip"].lower()}">{E(p["chip"])}</div></div>')
-        o.append('<div class="counts">')
-        for plat, cnt, u in p["counts"]:
-            o.append(f'<a class="cnt" href="{E(u)}" target="_blank" rel="noopener">'
-                     f'<span class="cnt-v">{E(cnt)}</span><span class="cnt-l">{E(plat)}</span></a>')
-        o.append("</div>")
-        o.append('<div class="spec">')
-        o.append(f'<div class="sp"><div class="sp-k">Status</div><div class="sp-v">{E(p["chip_why"])} {srclinks([p["chip_src"]])}</div></div>')
-        o.append(f'<div class="sp"><div class="sp-k">Price signal</div><div class="sp-v">{E(p["price"])} {srclinks([p["price_src"]])}</div></div>')
-        o.append(f'<div class="sp"><div class="sp-k">Why this person</div><div class="sp-v">{E(p["fit"])}</div></div>')
-        routes = [(p["email_addr"], "mailto:" + p["email_addr"])] if p.get("email_addr") else []
-        rhtml = " ".join(f'<a class="xtra" href="{E(u)}" target="_blank" rel="noopener">{E(t)}</a>' for t, u in routes)
-        if p.get("dm"): rhtml += f' <a class="xtra" href="{E(p["dm"])}" target="_blank" rel="noopener">Instagram direct message</a>'
-        if p.get("form"): rhtml += f' <a class="xtra" href="{E(p["form"])}" target="_blank" rel="noopener">Contact form</a>'
-        src = srclinks([p["email_src"]]) if p.get("email_src") else ""
-        o.append(f'<div class="sp"><div class="sp-k">Contact routes</div><div class="sp-v">{rhtml} {src}</div></div>')
-        o.append("</div>")
-        o.append('<div class="copyset">')
-        o.append(copybox(p["subject"], "Subject line"))
-        o.append(copybox(p["body"], "Outreach email"))
-        o.append("</div></article>")
-
-    o.append('<section class="blk">' + head("What a paid placement costs, by channel.") +
-             '<div class="twrap"><table class="tbl kv4"><thead><tr><th>Band</th><th>What it buys</th><th>Detail</th><th>Source</th></tr></thead><tbody>')
-    for a, b, c, u in D2.INFL_BENCHMARKS:
-        o.append(f'<tr><td><b>{E(a)}</b></td><td>{E(b)}</td><td>{E(c)}</td>'
-                 f'<td><a href="{E(u)}" target="_blank" rel="noopener">Source</a></td></tr>')
-    o.append("</tbody></table></div></section>")
-    o.append("</div>")
-    return "".join(o)
+    return V2_INFL
 
 # ============================================================ TAB 5
 def tab5():
@@ -589,9 +502,11 @@ font-family:'Fraunces',Georgia,serif}
 .cell.ok .cell-v{color:#5CE8B4}
 .cell.bad{background:rgba(255,77,77,.11)}
 .cell.bad .cell-v{color:#FF8A8A}
+.cell.warn{background:rgba(94,182,255,.11)}
+.cell.warn .cell-v{color:#8FCBFF}
 
 /* ---- two lines ---- */
-.twoline{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px}
+.twoline{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px;align-items:start}
 .lane{border-radius:24px;padding:34px;border:1px solid var(--line);
 box-shadow:0 50px 90px -60px rgba(0,0,0,.95)}
 .lane-a{background:radial-gradient(600px 300px at 0% 0%,rgba(0,110,255,.20),transparent 60%),linear-gradient(165deg,#0A1226,#070B16)}
@@ -608,8 +523,9 @@ background:var(--blue);display:inline-block;padding:6px 14px;border-radius:8px}
 .lane-math{margin-top:22px;padding:20px 22px;background:rgba(255,255,255,.05);border-radius:14px}
 .lane-math b{color:var(--blue2);font-size:17px}
 .lane-b .lane-math b{color:#FFA8A8}
-.lane-math ul{margin:12px 0 0;padding-left:20px;display:grid;gap:9px}
-.lane-math li{font-size:17px;color:var(--txt2)}
+.lane-math ul{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.lane-math li{font-size:17px;color:var(--txt2);padding-left:14px;border-left:2px solid rgba(0,110,255,.5)}
+.lane-b .lane-math li{border-left-color:rgba(255,77,77,.5)}
 .lane-math li b{color:var(--txt);font-weight:600}
 .lane-v{margin-top:22px;font-size:19px;color:#fff}
 
@@ -617,8 +533,9 @@ background:var(--blue);display:inline-block;padding:6px 14px;border-radius:8px}
 .decide{margin:64px 0;background:linear-gradient(140deg,var(--blue) 0%,#0038A8 100%);
 border-radius:24px;padding:48px;box-shadow:0 50px 90px -50px rgba(0,110,255,.7)}
 .decide h2{font-size:clamp(28px,3.4vw,46px);color:#fff;margin-bottom:26px}
-.decide ol{margin:0;padding-left:26px;display:grid;gap:16px}
-.decide li{font-size:clamp(18px,1.4vw,21px);color:#EAF2FF;max-width:80ch}
+.decide ol{margin:0;padding:0;list-style:none;counter-reset:d;display:grid;gap:18px}
+.decide li{font-size:clamp(18px,1.4vw,21px);color:#EAF2FF;max-width:80ch;counter-increment:d;padding-left:52px;position:relative;min-height:38px}
+.decide li:before{counter-increment:none;content:counter(d);position:absolute;left:0;top:-2px;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.18);color:#fff;font-family:'Fraunces',Georgia,serif;font-size:20px;display:flex;align-items:center;justify-content:center}
 
 /* ---- vendors, influencers ---- */
 .vend-bk{background:linear-gradient(165deg,#0B0F1A 0%,#06080F 100%)}
@@ -748,7 +665,7 @@ def render():
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%2305060A'/%3E%3Cpath d='M20 8 L33 30 H7 Z' fill='none' stroke='%23006EFF' stroke-width='3'/%3E%3C/svg%3E">
-<style>{CSS}</style>
+<style>{CSS}{R.CSS_V2}</style>
 </head>
 <body>
 <header class="mast"><div class="wrap mast-in">
@@ -778,7 +695,7 @@ def render():
  <p><b>Sources.</b> Pricing, curriculum and terms from <a href="https://longevitylifeacademy.com/pricing.html" target="_blank" rel="noopener">longevitylifeacademy.com/pricing.html</a> and <a href="https://www.longevitylifeacademy.com/terms.html" target="_blank" rel="noopener">terms.html</a>. Audience composition from <a href="https://www.similarweb.com/website/peterattiamd.com/" target="_blank" rel="noopener">Similarweb, peterattiamd.com, June 2026</a>. Meta delivery mechanics from the <a href="https://www.facebook.com/business/help/112167992830700" target="_blank" rel="noopener">Meta Business Help Center</a>. Benchmarks from <a href="https://www.wordstream.com/blog/facebook-ads-cost" target="_blank" rel="noopener">WordStream</a>, <a href="https://www.triplewhale.com/blog/facebook-ads-benchmarks" target="_blank" rel="noopener">Triple Whale</a> and <a href="https://www.sparkugc.com/resources/meta-ads-benchmarks-by-business-type-2026" target="_blank" rel="noopener">Spark UGC</a>. Creative served from the client GitHub organisation.</p>
  <p style="margin-top:18px">Prepared by Gita Agency. Every figure on this page traces to a named source file or a linked public source.</p>
 </div></footer>
-<script>{JS}</script>
+<script>{JS}{R.JS_V2}</script>
 </body></html>"""
 
 if __name__ == "__main__":

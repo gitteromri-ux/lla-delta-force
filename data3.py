@@ -75,12 +75,12 @@ LINE_B = {
 # Line A sensitivity. close rate rows, CPL columns.
 SENS_CPLS = ["$20", "$40", "$60"]
 SENS_ROWS = [
- ("2%",  [("$1,000", "1.25x", False), ("$2,000", "0.62x", False), ("$3,000", "0.42x", False)]),
- ("5%",  [("$400", "3.12x", True),   ("$800", "1.56x", True),    ("$1,200", "1.04x", False)]),
- ("10%", [("$200", "6.25x", True),   ("$400", "3.12x", True),    ("$600", "2.08x", True)]),
- ("18%", [("$111", "11.3x", True),   ("$222", "5.62x", True),    ("$333", "3.75x", True)]),
+ ("2%",  [("$1,000", "1.25x", "warn"), ("$2,000", "0.62x", "bad"),  ("$3,000", "0.42x", "bad")]),
+ ("5%",  [("$400", "3.12x", "ok"),     ("$800", "1.56x", "warn"),   ("$1,200", "1.04x", "warn")]),
+ ("10%", [("$200", "6.25x", "ok"),     ("$400", "3.12x", "ok"),     ("$600", "2.08x", "ok")]),
+ ("18%", [("$111", "11.3x", "ok"),     ("$222", "5.62x", "ok"),     ("$333", "3.75x", "ok")]),
 ]
-SENS_NOTE = "Cost per acquisition is cost per lead divided by close rate. Return on ad spend is $1,249 divided by cost per acquisition. Break even sits at 1.00x, so every cell above that line is a line that pays for itself before overheads."
+SENS_NOTE = "Cost per acquisition is cost per lead divided by close rate, and return on ad spend is $1,249 divided by cost per acquisition. Green is above 2.00x and carries overheads, blue is between 1.00x and 2.00x and pays for media only, red is below 1.00x and loses money on every sale."
 
 # Line B funnel, common inputs
 LINEB_INPUTS = [
